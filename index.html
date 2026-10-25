@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baccarat Point Tracker</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        h2 {
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .input-field {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            color: #b0b0b0;
+        }
+        input {
+            padding: 10px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 1rem;
+            text-align: center;
+        }
+        input:focus {
+            border-color: #00d2ff;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #007acc;
+            border: none;
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        button:hover {
+            background: #005999;
+        }
+        .panel {
+            background: #252525;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        .prediction {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #00ffcc;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .history-list {
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px dashed #2a2a2a;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Baccarat Tracker</h2>
+    
+    <div class="input-group">
+        <div class="input-field">
+            <label>Điểm Player (0-9)</label>
+            <input type="number" id="pScore" min="0" max="9" placeholder="P">
+        </div>
+        <div class="input-field">
+            <label>Điểm Banker (0-9)</label>
+            <input type="number" id="bScore" min="0" max="9" placeholder="B">
+        </div>
+    </div>
+    <button onclick="addRound()">Thêm Kết Quả</button>
+
+    <div class="panel">
+        <div class="stat-row">
+            <span>Tổng số ván: <strong id="totalRounds">0</strong></span>
+            <span>Player: <strong id="pRate">0.0%</strong> | Banker: <strong id="bRate">0.0%</strong></span>
+        </div>
+        <div class="stat-row">
+            <span>Cầu hiện tại: <strong id="currentStreak">-</strong></span>
+            <span>Cách biệt TB: <strong id="avgMargin">0.0</strong></span>
+        </div>
+        <div class="prediction" id="predictionText">Đang chờ nhập dữ liệu...</div>
+    </div>
+
+    <div class="panel">
+        <label>Lịch sử ván gần đây:</label>
+        <div class="history-list" id="historyList">
+            <div style="color: #666; text-align: center;">Chưa có dữ liệu</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let historyData = [];
+
+    function addRound() {
+        const pInput = document.getElementById('pScore');
+        const bInput = document.getElementById('bScore');
+        
+        const p = parseInt(pInput.value);
+        const b = parseInt(bInput.value);
+
+        if (isNaN(p) || isNaN(b) || p < 0 || p > 9 || b < 0 || b > 9) {
+            alert("Vui lòng nhập điểm số hợp lệ từ 0 đến 9 cho cả hai bên.");
+            return;
+        }
+
+        let winner = 'T';
+        if (p > b) winner = 'P';
+        else if (b > p) winner = 'B';
+
+        const margin = Math.abs(p - b);
+
+        historyData.push({ p, b, winner, margin });
+        
+        pInput.value = '';
+        bInput.value = '';
+        pInput.focus();
+
+        updateUI();
+    }
+
+    // Hỗ trợ nhấn phím Enter để nhập nhanh
+    document.getElementById('bScore').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') addRound();
+    });
+    document.getElementById('pScore').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('bScore').focus();
+    });
+
+    function updateUI() {
+        const total = historyData.length;
+        if (total === 0) return;
+
+        const pWins = historyData.filter(x => x.winner === 'P').length;
+        const bWins = historyData.filter(x => x.winner === 'B').length;
+        
+        document.getElementById('totalRounds').textContent = total;
+        document.getElementById('pRate').textContent = ((pWins / total) * 100).toFixed(1) + '%';
+        document.getElementById('bRate').textContent = ((bWins / total) * 100).toFixed(1) + '%';
+
+        const totalMargin = historyData.reduce((sum, x) => sum + x.margin, 0);
+        document.getElementById('avgMargin').textContent =
